@@ -17,16 +17,16 @@
             <button class="speed-btn" onclick="resetSimulation()" style="margin-left: 5px;">Reset</button>
         </div>
         <div class="speed-controls">
-            <button class="speed-btn active">Real</button>
-            <button class="speed-btn">100000x</button>
-            <button class="speed-btn">1000000x</button>
-            <button class="speed-btn">10000000x</button>
+            <button class="speed-btn active" data-speed="1">Real</button>
+            <button class="speed-btn" data-speed="10">10x</button>
+            <button class="speed-btn" data-speed="100">100x</button>
+            <button class="speed-btn" data-speed="1000">1000x</button>
         </div>
         <div class="info">
             <div>Speed: <span id="current-speed">Real</span></div>
             <div>Zoom: <span id="current-zoom">100%</span></div>
             <div>Sim Time: <span id="sim-time">0 days</span></div>
-            <div>Click and drag to pan view</div>
+            <div>🖱️ Drag to orbit • 🖲️ Scroll to zoom • ⌨️ R: Reset, F: Fit, Space: Pause</div>
         </div>
     </div>
     

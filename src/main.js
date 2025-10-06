@@ -7,10 +7,10 @@ import './style.css';
 export class App {
   constructor() {
     this.canvas = document.getElementById('canvas');
-    this.camera = new Camera();
     this.renderer = new Renderer(this.canvas);
-    this.solarSystem = new SolarSystem();
-    this.controls = new Controls(this.canvas, this.camera);
+    this.camera = new Camera(this.renderer);
+    this.solarSystem = new SolarSystem(this.renderer.scene);
+    this.controls = new Controls(this.canvas, this.camera, this.solarSystem);
     this.lastTime = performance.now();
     
     this.init();
@@ -39,19 +39,11 @@ export class App {
     const deltaTime = (currentTime - this.lastTime) / 1000;
     this.lastTime = currentTime;
     
-    // Clear canvas
-    this.renderer.clear();
-    
     // Update solar system with delta time
     this.solarSystem.update(deltaTime);
     
-    // Draw solar system and get planet positions
-    const planetPositions = this.solarSystem.draw(this.renderer, this.camera);
-    
-    // Check for planet hover
-    const mousePos = this.controls.getMousePosition();
-    const hoveredPlanet = this.controls.checkPlanetHover(mousePos.x, mousePos.y, planetPositions);
-    this.controls.updatePlanetInfo(hoveredPlanet);
+    // Render the 3D scene
+    this.renderer.render();
     
     requestAnimationFrame(this.animate);
   };

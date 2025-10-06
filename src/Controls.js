@@ -1,7 +1,8 @@
 export class Controls {
-  constructor(canvas, camera) {
+  constructor(canvas, camera, solarSystem) {
     this.canvas = canvas;
     this.camera = camera;
+    this.solarSystem = solarSystem;
     this.isDragging = false;
     this.lastMouseX = 0;
     this.lastMouseY = 0;
@@ -13,23 +14,63 @@ export class Controls {
   }
 
   bindEvents() {
-    // Mouse controls for panning
-    this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+    // Mouse controls are now handled by OrbitControls
+    // We only need to track mouse position for planet hover
     this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
-    this.canvas.addEventListener('mouseleave', () => this.handleMouseUp());
+    
+    // Add scroll wheel zoom support
+    this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+    
+    // Add keyboard controls
+    document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+    
+    // Touch controls for mobile are handled by OrbitControls
+  }
 
-    // Touch controls for mobile
-    this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
-    this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e));
-    this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+  handleKeyDown(e) {
+    switch (e.key.toLowerCase()) {
+      case 'r':
+        this.resetSimulation();
+        break;
+      case 'f':
+        this.fitView();
+        break;
+      case '1':
+        this.setSpeed(1, document.querySelector('.speed-btn[data-speed="1"]'));
+        break;
+      case '2':
+        this.setSpeed(10, document.querySelector('.speed-btn[data-speed="10"]'));
+        break;
+      case '3':
+        this.setSpeed(100, document.querySelector('.speed-btn[data-speed="100"]'));
+        break;
+      case '4':
+        this.setSpeed(1000, document.querySelector('.speed-btn[data-speed="1000"]'));
+        break;
+      case ' ':
+        e.preventDefault();
+        // Toggle pause/play
+        const currentSpeed = this.getCurrentSpeed();
+        if (currentSpeed > 0) {
+          this.pausedSpeed = currentSpeed;
+          this.setSpeed(0, null);
+        } else {
+          this.setSpeed(this.pausedSpeed || 1, null);
+        }
+        break;
+    }
+  }
+
+  getCurrentSpeed() {
+    // This would need to be implemented to get current speed from simulation
+    return 1; // Default fallback
   }
 
   bindSpeedButtons() {
     // Attach event listeners to speed buttons
-    const speedButtons = document.querySelectorAll('.speed-btn');
+    const speedButtons = document.querySelectorAll('.speed-btn[data-speed]');
     speedButtons.forEach(btn => {
-      const speed = btn.textContent === 'Real' ? 1 : parseInt(btn.textContent.replace('x', ''));
+      const speed = parseInt(btn.getAttribute('data-speed'));
       btn.addEventListener('click', () => this.setSpeed(speed, btn));
     });
   }
@@ -42,53 +83,20 @@ export class Controls {
     window.resetSimulation = () => this.resetSimulation();
   }
 
-  handleMouseDown(e) {
-    this.isDragging = true;
-    this.lastMouseX = e.clientX;
-    this.lastMouseY = e.clientY;
-  }
-
   handleMouseMove(e) {
-    if (this.isDragging) {
-      const deltaX = e.clientX - this.lastMouseX;
-      const deltaY = e.clientY - this.lastMouseY;
-      
-      this.camera.move(-deltaX, -deltaY);
-    }
-    
     this.lastMouseX = e.clientX;
     this.lastMouseY = e.clientY;
-  }
-
-  handleMouseUp() {
-    this.isDragging = false;
-  }
-
-  handleTouchStart(e) {
-    e.preventDefault();
-    const touch = e.touches[0];
-    this.isDragging = true;
-    this.lastMouseX = touch.clientX;
-    this.lastMouseY = touch.clientY;
-  }
-
-  handleTouchMove(e) {
-    e.preventDefault();
-    if (this.isDragging && e.touches.length === 1) {
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - this.lastMouseX;
-      const deltaY = touch.clientY - this.lastMouseY;
-      
-      this.camera.move(-deltaX, -deltaY);
-      
-      this.lastMouseX = touch.clientX;
-      this.lastMouseY = touch.clientY;
+    
+    // Check for planet hover using raycasting
+    if (this.solarSystem) {
+      const hoveredPlanet = this.solarSystem.checkPlanetHover(e.clientX, e.clientY, this.camera);
+      this.updatePlanetInfo(hoveredPlanet);
     }
   }
 
-  handleTouchEnd(e) {
+  handleWheel(e) {
+    // Prevent default scroll behavior
     e.preventDefault();
-    this.isDragging = false;
   }
 
   setSpeed(speed, buttonElement) {
@@ -100,8 +108,10 @@ export class Controls {
     document.getElementById('current-speed').textContent = displayText;
     
     // Update button states
-    document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active'));
-    buttonElement.classList.add('active');
+    document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => btn.classList.remove('active'));
+    if (buttonElement) {
+      buttonElement.classList.add('active');
+    }
   }
 
   zoomIn() {
@@ -126,18 +136,13 @@ export class Controls {
   }
 
   updateZoomDisplay() {
-    const zoomPercentage = Math.round(this.camera.zoomLevel * 100) + '%';
+    const zoomPercentage = Math.round(this.camera.getZoomLevel() * 100) + '%';
     document.getElementById('current-zoom').textContent = zoomPercentage;
   }
 
   checkPlanetHover(mouseX, mouseY, planetPositions) {
-    for (let pos of planetPositions) {
-      const distance = Math.sqrt((mouseX - pos.x) ** 2 + (mouseY - pos.y) ** 2);
-      if (distance <= pos.radius + 5) {
-        return pos.planet;
-      }
-    }
-    return null;
+    // This is now handled by the SolarSystem's raycasting
+    return this.solarSystem ? this.solarSystem.checkPlanetHover(mouseX, mouseY, this.camera) : null;
   }
 
   updatePlanetInfo(planet) {

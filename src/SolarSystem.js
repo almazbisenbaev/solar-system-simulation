@@ -1,16 +1,21 @@
 import { Planet } from './Planet.js';
 import { Sun } from './Sun.js';
+import * as THREE from 'three';
 
 export class SolarSystem {
-  constructor() {
+  constructor(scene) {
+    this.scene = scene;
     this.speedMultiplier = 1;
     this.simulationTimeInDays = 0;
     
     // Initialize the sun
-    this.sun = new Sun();
+    this.sun = new Sun(scene);
     
     // Initialize planets with realistic planetary data
     this.planets = this.createPlanets();
+    
+    // Setup raycasting for planet interaction
+    this.setupRaycasting();
   }
 
   createPlanets() {
@@ -18,10 +23,10 @@ export class SolarSystem {
       {
         name: "Mercury",
         color: "#8C7853",
-        radius: 2.44,
+        radius: 4,
         distance: 80,
-        speed: 4.092, // 360° ÷ 87.97 days = 4.092°/day
-        angle: 0,
+        speed: 4.092,
+        angle: Math.random() * Math.PI * 2, // Random starting positions
         realRadius: "2,439 km",
         realDistance: "57.9 million km",
         orbitalPeriod: "87.97 days"
@@ -29,10 +34,10 @@ export class SolarSystem {
       {
         name: "Venus",
         color: "#FFC649",
-        radius: 6.05,
+        radius: 8,
         distance: 110,
-        speed: 1.602, // 360° ÷ 224.7 days = 1.602°/day
-        angle: 0,
+        speed: 1.602,
+        angle: Math.random() * Math.PI * 2,
         realRadius: "6,051 km",
         realDistance: "108.2 million km",
         orbitalPeriod: "224.7 days"
@@ -40,10 +45,10 @@ export class SolarSystem {
       {
         name: "Earth",
         color: "#6B93D6",
-        radius: 6.37,
+        radius: 8.5,
         distance: 150,
-        speed: 0.9856, // 360° ÷ 365.25 days = 0.9856°/day
-        angle: 0,
+        speed: 0.9856,
+        angle: Math.random() * Math.PI * 2,
         realRadius: "6,371 km",
         realDistance: "149.6 million km",
         orbitalPeriod: "365.25 days"
@@ -51,10 +56,10 @@ export class SolarSystem {
       {
         name: "Mars",
         color: "#C1440E",
-        radius: 3.39,
+        radius: 5.5,
         distance: 200,
-        speed: 0.5240, // 360° ÷ 687 days = 0.5240°/day
-        angle: 0,
+        speed: 0.5240,
+        angle: Math.random() * Math.PI * 2,
         realRadius: "3,389 km",
         realDistance: "227.9 million km",
         orbitalPeriod: "687 days"
@@ -62,10 +67,10 @@ export class SolarSystem {
       {
         name: "Jupiter",
         color: "#D8CA9D",
-        radius: 25,
+        radius: 28,
         distance: 320,
-        speed: 0.0831, // 360° ÷ 4333 days (11.86 years) = 0.0831°/day
-        angle: 0,
+        speed: 0.0831,
+        angle: Math.random() * Math.PI * 2,
         realRadius: "69,911 km",
         realDistance: "778.5 million km",
         orbitalPeriod: "11.86 years"
@@ -73,10 +78,10 @@ export class SolarSystem {
       {
         name: "Saturn",
         color: "#FAD5A5",
-        radius: 20,
+        radius: 24,
         distance: 420,
-        speed: 0.0334, // 360° ÷ 10759 days (29.46 years) = 0.0334°/day
-        angle: 0,
+        speed: 0.0334,
+        angle: Math.random() * Math.PI * 2,
         realRadius: "58,232 km",
         realDistance: "1.43 billion km",
         orbitalPeriod: "29.46 years",
@@ -85,10 +90,10 @@ export class SolarSystem {
       {
         name: "Uranus",
         color: "#4FD0E3",
-        radius: 10,
+        radius: 14,
         distance: 520,
-        speed: 0.0117, // 360° ÷ 30687 days (84.01 years) = 0.0117°/day
-        angle: 0,
+        speed: 0.0117,
+        angle: Math.random() * Math.PI * 2,
         realRadius: "25,362 km",
         realDistance: "2.87 billion km",
         orbitalPeriod: "84.01 years"
@@ -96,17 +101,23 @@ export class SolarSystem {
       {
         name: "Neptune",
         color: "#4B70DD",
-        radius: 9.8,
+        radius: 13,
         distance: 620,
-        speed: 0.0060, // 360° ÷ 60190 days (164.8 years) = 0.0060°/day
-        angle: 0,
+        speed: 0.0060,
+        angle: Math.random() * Math.PI * 2,
         realRadius: "24,622 km",
         realDistance: "4.50 billion km",
         orbitalPeriod: "164.8 years"
       }
     ];
 
-    return planetData.map(data => new Planet(data));
+    return planetData.map(data => new Planet(data, this.scene));
+  }
+
+  setupRaycasting() {
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+    this.hoveredPlanet = null;
   }
 
   setSpeed(multiplier) {
@@ -114,6 +125,9 @@ export class SolarSystem {
   }
 
   update(deltaTime) {
+    // Update sun animation
+    this.sun.update(deltaTime);
+    
     // Update all planets with delta time
     this.planets.forEach(planet => {
       planet.update(deltaTime, this.speedMultiplier);
@@ -149,27 +163,31 @@ export class SolarSystem {
   }
 
   draw(renderer, camera) {
-    const center = renderer.getCenterPosition();
-    const { x: centerX, y: centerY } = center;
-
-    // Draw background stars
-    renderer.drawStars(camera.x, camera.y);
-    
-    // Draw orbital paths
-    this.planets.forEach(planet => {
-      renderer.drawOrbit(planet.distance, centerX, centerY, camera.zoomLevel, camera.x, camera.y);
-    });
-    
-    // Draw sun
-    this.sun.draw(renderer.ctx, centerX, centerY, camera.zoomLevel, camera.x, camera.y);
-    
-    // Draw planets and collect their positions
-    const planetPositions = [];
-    this.planets.forEach(planet => {
-      const pos = planet.draw(renderer.ctx, centerX, centerY, camera.zoomLevel, camera.x, camera.y);
-      planetPositions.push(pos);
-    });
-
+    // Rendering is now handled by Three.js renderer
+    // Return planet positions for mouse interaction
+    const planetPositions = this.planets.map(planet => planet.get3DPosition());
     return planetPositions;
+  }
+
+  checkPlanetHover(mouseX, mouseY, camera) {
+    // Update mouse coordinates for raycasting
+    this.mouse.x = (mouseX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(mouseY / window.innerHeight) * 2 + 1;
+
+    // Update raycaster
+    this.raycaster.setFromCamera(this.mouse, camera.threeCamera);
+
+    // Get all planet meshes
+    const planetMeshes = this.planets.map(planet => planet.mesh);
+
+    // Check for intersections
+    const intersects = this.raycaster.intersectObjects(planetMeshes);
+
+    if (intersects.length > 0) {
+      const intersectedObject = intersects[0].object;
+      return intersectedObject.userData.planet;
+    }
+
+    return null;
   }
 }
