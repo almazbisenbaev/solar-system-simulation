@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic Solar System Simulation</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="controls">
+        <div class="zoom-controls">
+            <span class="zoom-label">Zoom:</span>
+            <button class="zoom-btn" onclick="zoomIn()">+</button>
+            <button class="zoom-btn" onclick="zoomOut()">−</button>
+            <button class="speed-btn" onclick="fitView()" style="margin-left: 5px;">Fit</button>
+            <button class="speed-btn" onclick="resetSimulation()" style="margin-left: 5px;">Reset</button>
+        </div>
+        <div class="speed-controls">
+            <button class="speed-btn active">Real</button>
+            <button class="speed-btn">100000x</button>
+            <button class="speed-btn">1000000x</button>
+            <button class="speed-btn">10000000x</button>
+        </div>
+        <div class="info">
+            <div>Speed: <span id="current-speed">Real</span></div>
+            <div>Zoom: <span id="current-zoom">100%</span></div>
+            <div>Sim Time: <span id="sim-time">0 days</span></div>
+            <div>Click and drag to pan view</div>
+        </div>
+    </div>
+    
+    <div class="planet-info" id="planet-info">
+        Hover over planets for information
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
